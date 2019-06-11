@@ -7,7 +7,8 @@ import {
   Text,
   View,
   Image,
-  ViewPropTypes
+  ViewPropTypes,
+  Platform,
 } from "react-native";
 
 const { width } = Dimensions.get("window");
@@ -22,6 +23,7 @@ export default class ImageOverlay extends Component {
       height,
       overlayAlpha,
       overlayColor,
+      overlayHeight,
       rounded,
       source,
       title,
@@ -30,12 +32,23 @@ export default class ImageOverlay extends Component {
     } = this.props;
 
     let justifyContent;
+    let overlayPosition;
+    let _height = containerStyle ? containerStyle.height : height;
+    let _overlayHeight = overlayHeight ? overlayHeight : height;
+
     if (contentPosition == "top") {
       justifyContent = "flex-start";
+      overlayPosition = 0;
     } else if (contentPosition == "bottom") {
       justifyContent = "flex-end";
+      overlayPosition = typeof _overlayHeight == 'string' && _overlayHeight.search('%') !== -1 ? 
+        _height - ((parseFloat(_overlayHeight) / 100.0) * _height) :
+        _height - parseInt(_overlayHeight);
     } else if (contentPosition == "center") {
       justifyContent = "center";
+      overlayPosition = typeof _overlayHeight == 'string' && _overlayHeight.search('%') !== -1 ? 
+        _height/2 - (((parseFloat(_overlayHeight) / 100.0) * _height) / 2.0) :
+        _height/2 - (parseInt(_overlayHeight)/2);
     }
 
     return (
@@ -52,15 +65,25 @@ export default class ImageOverlay extends Component {
         ]}
         blurRadius={blurRadius}
       >
-        <View
-          style={{
+        <View style={{
+          height: overlayHeight ? overlayHeight : "100%",
+          position: 'absolute',
+          width: '100%',
+          top: overlayPosition,
+          justifyContent: 'center',
+          alignItems: 'center',
+          flex:1,
+        }}>
+          <View style={{
             ...StyleSheet.absoluteFillObject,
             backgroundColor: overlayColor,
-            opacity: overlayAlpha
-          }}
-        />
-        {!children &&
-          title && <Text style={[styles.title, titleStyle]}>{title}</Text>}
+            opacity: overlayAlpha,
+            zIndex:1,
+          }}/>
+          {!children &&
+            title && <Text style={[styles.title, titleStyle]}>{title}</Text>}
+        </View>
+
         {children}
       </ImageBackground>
     );
@@ -74,11 +97,11 @@ const styles = StyleSheet.create({
     alignItems: "center"
   },
   title: {
-    margin: 20,
     color: "white",
     textAlign: "center",
-    fontSize: 16
-  }
+    fontSize: 16,
+    zIndex: 2,
+  },
 });
 
 ImageOverlay.propTypes = {
